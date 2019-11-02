@@ -24,7 +24,7 @@ public:
         {
             for (int j = 0; j < W; j++)
             {
-                if (this->_data(i, j) == -1)
+                if (this->_data(i, j) ==2)
                 {
                     cout << "R";
                 }
@@ -41,18 +41,62 @@ public:
         head[h * W + w] = data;
     }
 };
+class Node{
+    private:
+        int h;
+        int w;
+        Node *next=NULL;
+    public:
+        Node(int h,int w):h(h),w(w){}
+        Node *_next(){
+            return next;
+        }
+        void setNext(Node *next){
+            this->next=next;
+        }
+};
+class queue{
+    private:
+        Node *head=NULL;
+        Node *bottom=NULL;
+    public:
+    Node *_head(){
+        return head;
+    }
+    Node *_bottom(){
+        return bottom;
+    }
+    void push(Node *node){
+        if(head!=NULL){
+            bottom->setNext(node);
+            bottom=node;
+        }else{
+            head=node;
+            bottom=node;
+        }
+    }
+        
+};
+class Robot{
+    private:
+        int h;
+        int w;
+        int battery;
+    public:
+        Robot(int initialH,int initialW,int battry):h(initialH),w(initialW),battery(battery){}
+};
 Field *field;
 int main()
 {
     //input testcase
-    int H, W, battry;
+    int H, W, battery;
     ifstream inf("floor.data");
     if (!inf)
     {
         cout << "file open failed";
         return 0;
     }
-    inf >> H >> W >> battry;
+    inf >> H >> W >> battery;
     field = new Field(H, W);
     for (int i = 0; i < H; i++)
     {
@@ -62,7 +106,9 @@ int main()
             inf >> temp;
             if (temp == 'R')
             {
-                field->setData(i, j, -1);
+                field->setData(i, j, 2);
+                Robot bob(i,j,battery);
+
             }
             else
             {
@@ -73,4 +119,11 @@ int main()
 
     //testing
     field->print();
+
+    //algorithm 1
+    queue q;
+    
+    
+
+
 }
