@@ -5,7 +5,7 @@ using namespace std;
 class Field
 {
 private:
-    int *head;
+    int *head;//R=-1 wall=1 >1=unclean <-1=clean
     int H;
     int W;
 public:
@@ -113,8 +113,9 @@ class Robot{
         int w;
         int direction=0;//the direction robot heading.0=left,1=up,2=right,3=down
         int battery;
+        int fullBattery;
     public:
-        Robot(int initialH,int initialW,int battery):h(initialH),w(initialW),battery(battery){
+        Robot(int initialH,int initialW,int battery):h(initialH),w(initialW),battery(battery),fullBattery(battery){
             q.push(new Node(h,w));
         }
         void findNearestDirtBlock(){
@@ -123,15 +124,17 @@ class Robot{
         void moveOneStep(){
             direction=(direction+3)%4;
             for(int i=0;i<4;i++){
-                int _h=direction%2*(direction-2),_w=(direction+1)%2*(direction-1);
-                if(field->_data(h+_h,w+_w)==0){
+                int _h=direction%2*(direction-2),_w=(direction+1)%2*(direction-1);//amount of left offset according to direction 
+                if(field->_data(h+_h,w+_w)==0){//should change to >1
                     //can walk
                     h+=_h;
                     w+=_w;
-                    battery--;
                     q.push(new Node(h,w));
                     if(field->_data(h,w)!=-1){
+                        battery--;
                         field->setData(h,w,-2+field->_data(h,w)*-1);//-2 mush delete
+                    }else{
+                        battery=fullBattery;
                     }
                     return;
                 }
@@ -139,6 +142,11 @@ class Robot{
             }
             //no dirty block to walk
             findNearestDirtBlock();
+        }
+        //test function 
+        void jump(int h,int w){
+            this->h=h;
+            this->w=w;
         }
 };
 Robot *bot;
@@ -174,9 +182,10 @@ int main()
     }
 
     //testing
-    for(int i=0;i<10;i++){
+    for(int i=0;i<3;i++){
         bot->moveOneStep();
     }
+    bot->jump(1,1);
     field->print();
     
     cout << q.size() << endl ;
