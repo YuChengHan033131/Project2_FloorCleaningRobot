@@ -2,49 +2,6 @@
 #include <iostream>
 #include <fstream>
 using namespace std;
-class Field
-{
-private:
-    int *head;//R=-1 wall=1 >1=unclean <-1=clean
-    int H;
-    int W;
-public:
-    Field(int H, int W) : H(H), W(W)
-    {
-        head = new int[H * W];
-    }
-    int _data(int h, int w)
-    {
-        return head[h * W + w];
-    }
-    //test function
-    void print()
-    {
-        for (int i = 0; i < H; i++)
-        {
-            for (int j = 0; j < W; j++)
-            {
-                if (this->_data(i, j) ==2)
-                {
-                    cout << " R";
-                }
-                else
-                {   
-                    if(this->_data(i, j) >=0) cout << " " ;
-                    cout << this->_data(i, j) ;
-                }
-            }
-            cout << endl ;
-        }
-        cout << endl;
-    }
-    void setData(int h, int w, int data)
-    {
-        head[h * W + w] = data;
-    }
-};
-Field *field;
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Node{
     private:
         int h;
@@ -64,20 +21,76 @@ class Node{
         int _w(){
             return w;
         }
+        void setData(int h,int w){
+            this->h=h;
+            this->w=w;
+        }
 };
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class Field
+{
+private:
+    int *head;//R=-1 wall=1 >1=unclean <-1=clean
+    int H;
+    int W;
+public:
+    Field(int H, int W) : H(H), W(W)
+    {
+        head = new int[H * W];
+    }
+    int _data(int h, int w)
+    {
+        return head[h * W + w];
+    }
+    int _data(Node *node){
+        return head[node->_h() * W + node->_w()];
+    }
+
+    //test function
+    void print()
+    {
+        for (int i = 0; i < H; i++)
+        {
+            for (int j = 0; j < W; j++)
+            {
+                if (this->_data(i, j) ==-1)
+                {
+                    cout << " R";
+                }
+                else
+                {   
+                    if(this->_data(i, j) >=0) cout << " " ;
+                    cout << this->_data(i, j) ;
+                }
+            }
+            cout << endl ;
+        }
+        cout << endl;
+    }
+    void setData(int h, int w, int data)
+    {
+        head[h * W + w] = data;
+    }
+    void setData(Node *node,int data){
+        head[node->_h() * W + node->_w()] = data;
+    }
+};
+Field *field;
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+template <class T>
 class queue{
     private:
-        Node *head=NULL;
-        Node *bottom=NULL;
+        T *head=NULL;
+        T *bottom=NULL;
     public:
-    Node *_head(){
+    T *_head(){
         return head;
     }
-    Node *_bottom(){
+    T *_bottom(){
         return bottom;
     }
-    void push(Node *node){
+    void push(T *node){
         if(head!=NULL){
             bottom->setNext(node);
             bottom=node;
@@ -86,26 +99,31 @@ class queue{
             bottom=node;
         }
     }
+    void *pop(){
+        head=head->_next();
+    }
     int size(){
-        Node *p=head;
+        T *p=head;
         int size=0;
         while(p!=NULL){
             size++;
             p=p->_next();
         }
+        delete(p);
         return size;
     }
     void printAll(){
-        Node *p=head;
+        T *p=head;
         int steps=0;
         while(p!=NULL){
             steps++;
             cout << p->_h() << " " << p->_w() << endl ;
             p=p->_next();
         }
+        delete(p);
     }
 };
-queue q;
+queue <Node> q;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Robot{
     private:
@@ -154,7 +172,9 @@ Robot *bot;
 int main()
 {
     //input testcase
-    int H, W, battery;
+    
+    int H, W, battery,WalkableBlockNumbers=0;
+    Node *charger;
     ifstream inf("floor.data");
     if (!inf)
     {
@@ -173,28 +193,59 @@ int main()
             {
                 field->setData(i, j, -1);
                 bot=new Robot(i,j,battery);
+                WalkableBlockNumbers++;
+                charger=new Node(i,j);
             }
             else
             {
                 field->setData(i, j, temp - '0');
+                if(temp=='0'){    
+                    WalkableBlockNumbers++;
+                }
             }
         }
     }
+    
+    //algorithm 1
+    //counting all dsitance to charger(by BFS) and enter maxheap
+    queue <Node> BFS_q;
+    BFS_q.push(charger);
+    field->setData(charger,1);//set R=1 temporary 
+    while(BFS_q._head()!=NULL){
+        Node *temp=BFS_q._head(),*temp2;
+        BFS_q.pop();
+        //visit left
+        temp2= new Node(temp->_h(),temp->_w()-1);
+        if(field->_data(temp2)==0){//0 means unvisited
+            field->setData(temp2,field->_data(temp)+1);
+            BFS_q.push(temp2);
+        }
+        //visit up
+        temp2= new Node(temp->_h()-1,temp->_w());
+        if(field->_data(temp2)==0){//0 means unvisited
+            field->setData(temp2,field->_data(temp)+1);
+            BFS_q.push(temp2);
+        }
+        //visit right
+        temp2= new Node(temp->_h(),temp->_w()+1);
+        if(field->_data(temp2)==0){//0 means unvisited
+            field->setData(temp2,field->_data(temp)+1);
+            BFS_q.push(temp2);
+        }
+        //visit down
+        temp2= new Node(temp->_h()+1,temp->_w());
+        if(field->_data(temp2)==0){//0 means unvisited
+            field->setData(temp2,field->_data(temp)+1);
+            BFS_q.push(temp2);
+        }
+    }
+    field->setData(charger,-1);//recover R=-1
 
     //testing
-    for(int i=0;i<3;i++){
-        bot->moveOneStep();
-    }
-    bot->jump(1,1);
     field->print();
     
     cout << q.size() << endl ;
     q.printAll();
-    
-    //algorithm 1
-    //counting all dsitance to charger
-    
-    
     
 
 
