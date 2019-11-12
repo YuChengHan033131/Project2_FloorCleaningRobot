@@ -8,7 +8,6 @@ private:
     int *head;
     int H;
     int W;
-
 public:
     Field(int H, int W) : H(H), W(W)
     {
@@ -18,7 +17,7 @@ public:
     {
         return head[h * W + w];
     }
-    //testing function
+    //test function
     void print()
     {
         for (int i = 0; i < H; i++)
@@ -35,8 +34,9 @@ public:
                     cout << this->_data(i, j) ;
                 }
             }
-            cout << endl;
+            cout << endl ;
         }
+        cout << endl;
     }
     void setData(int h, int w, int data)
     {
@@ -44,6 +44,7 @@ public:
     }
 };
 Field *field;
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Node{
     private:
         int h;
@@ -63,8 +64,8 @@ class Node{
         int _w(){
             return w;
         }
-
 };
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class queue{
     private:
         Node *head=NULL;
@@ -103,79 +104,45 @@ class queue{
             p=p->_next();
         }
     }
-        
 };
 queue q;
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Robot{
     private:
         int h;
         int w;
+        int direction=0;//the direction robot heading.0=left,1=up,2=right,3=down
         int battery;
     public:
-        Robot(int initialH,int initialW,int battry):h(initialH),w(initialW),battery(battery){
+        Robot(int initialH,int initialW,int battery):h(initialH),w(initialW),battery(battery){
             q.push(new Node(h,w));
         }
-        bool walking(char direction){
-            switch (direction)
-            {
-            case 'U':
-                h--;
-                if(field->_data(h,w)==1){
-                    //robot can't walk to there
-                    h++;
-                    return false;
+        void findNearestDirtBlock(){
+            cout << "findNearestDirtBlock" << endl;
+        }
+        void moveOneStep(){
+            direction=(direction+3)%4;
+            for(int i=0;i<4;i++){
+                int _h=direction%2*(direction-2),_w=(direction+1)%2*(direction-1);
+                if(field->_data(h+_h,w+_w)==0){
+                    //can walk
+                    h+=_h;
+                    w+=_w;
+                    battery--;
+                    q.push(new Node(h,w));
+                    if(field->_data(h,w)!=-1){
+                        field->setData(h,w,-2+field->_data(h,w)*-1);//-2 mush delete
+                    }
+                    return;
                 }
-                break;
-            case 'R':
-                w++;
-                if(field->_data(h,w)==1){
-                    //robot can't walk to there
-                    w--;
-                    return false;
-                }
-                break;
-            case 'D':
-                h++;
-                if(field->_data(h,w)==1){
-                    //robot can't walk to there
-                    h--;
-                    return false;
-                }
-                break;
-            case 'L':
-                w--;
-                if(field->_data(h,w)==1){
-                    //robot can't walk to there
-                    w++;
-                    return false;
-                }
-                break;
-            default:
-                cout << "robot moving error";
-                break;
+                direction=(direction+1)%4;
             }
-            q.push(new Node(h,w));
-            if(field->_data(h,w)==2){
-                field->setData(h,w,field->_data(h,w));
-            }else{
-                field->setData(h,w,field->_data(h,w)-1);
-            }
-            return true;
-        }
-        bool goUp(){
-            return walking('U');
-        }
-        bool goRight(){
-            return walking('R');
-        }
-        bool goDown(){
-            return walking('D');
-        }
-        bool goLeft(){
-            return walking('L');
+            //no dirty block to walk
+            findNearestDirtBlock();
         }
 };
-Robot *bob;
+Robot *bot;
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 int main()
 {
     //input testcase
@@ -196,8 +163,8 @@ int main()
             inf >> temp;
             if (temp == 'R')
             {
-                field->setData(i, j, 2);
-                bob=new Robot(i,j,battery);
+                field->setData(i, j, -1);
+                bot=new Robot(i,j,battery);
             }
             else
             {
@@ -207,17 +174,16 @@ int main()
     }
 
     //testing
-    bob->goRight();
-    bob->goDown();
-    bob->goLeft();
-    bob->goUp();
+    for(int i=0;i<10;i++){
+        bot->moveOneStep();
+    }
     field->print();
+    
     cout << q.size() << endl ;
     q.printAll();
     
-
-
     //algorithm 1
+    //counting all dsitance to charger
     
     
     
