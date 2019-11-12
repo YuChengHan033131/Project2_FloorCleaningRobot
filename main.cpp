@@ -9,6 +9,7 @@ class Node{
         Node *next=NULL;
     public:
         Node(int h,int w):h(h),w(w){}
+        Node(){}
         Node *_next(){
             return next;
         }
@@ -99,7 +100,7 @@ class queue{
             bottom=node;
         }
     }
-    void *pop(){
+    void pop(){
         head=head->_next();
     }
     int size(){
@@ -169,6 +170,81 @@ class Robot{
 };
 Robot *bot;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class maxheap{
+    private:
+        Node **head;
+        int size=0;
+    public:
+    maxheap(){}
+    maxheap(int size){
+        head=new Node* [size];
+        for(int i=0;i<size;i++){
+            head[i]=NULL;
+        }
+    }
+    void insert(Node *node){
+        head[size]=node;
+        size++;
+    }
+    void heapify(){
+        for(int i=size/2-1;i>=0;i--){
+            int largerIndex=-1;
+            if(i*2+1<size&&i*2+2>=size){
+                if(field->_data(head[i])<field->_data(head[i*2+1])){
+                    largerIndex=i*2+1;
+                }
+            }else if(i*2+1<size&&i*2+2<size){
+                bool i_smaller_l=field->_data(head[i])<field->_data(head[i*2+1]),
+                     i_smaller_r=field->_data(head[i])<field->_data(head[i*2+2]),
+                     l_smaller_r=field->_data(head[i*2+1])<field->_data(head[i*2+2]);
+                    if(i_smaller_r||i_smaller_l){
+                        if(l_smaller_r){
+                            largerIndex=i*2+2;
+                        }else{
+                            largerIndex=i*2+1;
+                        }
+                    }
+            }
+            else{
+                continue;
+            }
+            if(largerIndex!=-1){
+                Node *temp=head[i];
+                head[i]=head[largerIndex];
+                head[largerIndex]=temp;
+            }
+        }
+    }
+    int root(){
+        return field->_data(head[0]);
+    }
+    void pop(){//delete root
+        if(size<1){
+            return ;
+        }
+        head[0]=head[size-1];
+        head[size-1]=NULL;
+        size--;
+        heapify();
+    }
+    //test function
+    void print(){//from big to small .will delete maxheap
+        int n=size;
+        heapify();
+        for(int i=0;i<n;i++){
+            cout << root() << " " ;
+            pop();
+        }
+    }
+    void printMatrix(){
+        for(int i=0;i<size;i++){
+            cout << field->_data(head[i]);
+        }
+        cout << endl;
+        
+    }
+};
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 int main()
 {
     //input testcase
@@ -209,10 +285,12 @@ int main()
     //algorithm 1
     //counting all dsitance to charger(by BFS) and enter maxheap
     queue <Node> BFS_q;
+    maxheap m(WalkableBlockNumbers);
     BFS_q.push(charger);
     field->setData(charger,1);//set R=1 temporary 
     while(BFS_q._head()!=NULL){
         Node *temp=BFS_q._head(),*temp2;
+        m.insert(temp);
         BFS_q.pop();
         //visit left
         temp2= new Node(temp->_h(),temp->_w()-1);
@@ -241,11 +319,15 @@ int main()
     }
     field->setData(charger,-1);//recover R=-1
 
+
+
+
     //testing
     field->print();
-    
-    cout << q.size() << endl ;
-    q.printAll();
+    m.print();
+
+    /*cout << q.size() << endl ;
+    q.printAll();*/
     
 
 
