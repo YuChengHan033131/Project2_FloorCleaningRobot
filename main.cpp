@@ -60,7 +60,7 @@ public:
                 }
                 else
                 {   
-                    if(this->_data(i, j) >=0) cout << " " ;
+                    if(this->_data(i, j)<10 && this->_data(i, j)>0) cout << " " ;
                     cout << this->_data(i, j) ;
                 }
             }
@@ -78,53 +78,88 @@ public:
 };
 Field *field;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-template <class T>
 class queue{
     private:
-        T *head=NULL;
-        T *bottom=NULL;
+        Node **head;
+        int _front=-1;
+        int _back=-1;
+        int _size;
     public:
-    T *_head(){
-        return head;
-    }
-    T *_bottom(){
-        return bottom;
-    }
-    void push(T *node){
-        if(head!=NULL){
-            bottom->setNext(node);
-            bottom=node;
-        }else{
-            head=node;
-            bottom=node;
+    queue(){};
+    queue(int size):_size(size){
+        head = new Node* [_size];
+        for(int i=0;i<_size;i++){
+            head[i]=NULL;
         }
+    }
+    void setSize(int size){
+        _size=size;
+        head = new Node* [_size];
+        for(int i=0;i<_size;i++){
+            head[i]=NULL;
+        }
+    }
+    Node *front(){
+        if(_front==-1){
+            cout << "error! queue is empty" ;
+        }
+        return head[_front];
+    }
+    Node *back(){
+        if(_front==-1){
+            cout << "error! queue is empty" ;
+        }
+        return head[_back];
+    }
+    void push(Node *node){
+        if(_front==-1){
+            _front=0;
+            _back=0;
+        }else if((_back+1)%_size!=_front){
+            _back=(_back+1)%_size;
+        }else{
+            cout << "queue is full! " ;
+            return;
+        }
+        head[_back]=node;
     }
     void pop(){
-        head=head->_next();
+        if(_front==-1){
+            cout << "error!nothing to pop" << endl;
+        }
+        else if(_front==_back){
+            _front=-1;
+            _back=-1;
+        }else{
+            _front=(_front+1)%_size;
+        }
     }
     int size(){
-        T *p=head;
-        int size=0;
-        while(p!=NULL){
-            size++;
-            p=p->_next();
+        if(_front==-1){
+            return 0;
+        }else if(_front<=_back){
+            return _back-_front+1;
+        }else{
+            return _back-_front+_size+1;
         }
-        delete(p);
-        return size;
+       
     }
     void printAll(){
-        T *p=head;
-        int steps=0;
-        while(p!=NULL){
-            steps++;
-            cout << p->_h() << " " << p->_w() << endl ;
-            p=p->_next();
+        if(_front==-1){
+            cout << "error! nothing to print" << endl ;
+            return ;
         }
-        delete(p);
+       int temp=_front;
+       while(1){
+           cout << head[temp]->_h() << " " << head[temp]->_w() << endl ;
+           temp=(temp+1)%_size;
+           if(temp==(_back+1)%_size){
+               break;
+           }
+       }
     }
 };
-queue <Node> q;
+queue q;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Robot{
     private:
@@ -134,9 +169,7 @@ class Robot{
         int battery;
         int fullBattery;
     public:
-        Robot(int initialH,int initialW,int battery):h(initialH),w(initialW),battery(battery),fullBattery(battery){
-            q.push(new Node(h,w));
-        }
+        Robot(int initialH,int initialW,int battery):h(initialH),w(initialW),battery(battery),fullBattery(battery){        }
         void findNearestDirtBlock(){
             cout << "findNearestDirtBlock" << endl;
         }
@@ -144,14 +177,14 @@ class Robot{
             direction=(direction+3)%4;
             for(int i=0;i<4;i++){
                 int _h=direction%2*(direction-2),_w=(direction+1)%2*(direction-1);//amount of left offset according to direction 
-                if(field->_data(h+_h,w+_w)==0){//should change to >1
+                if(field->_data(h+_h,w+_w)>1){
                     //can walk
                     h+=_h;
                     w+=_w;
                     q.push(new Node(h,w));
                     if(field->_data(h,w)!=-1){
                         battery--;
-                        field->setData(h,w,-2+field->_data(h,w)*-1);//-2 mush delete
+                        field->setData(h,w,field->_data(h,w)*-1);
                     }else{
                         battery=fullBattery;
                     }
@@ -161,6 +194,9 @@ class Robot{
             }
             //no dirty block to walk
             findNearestDirtBlock();
+        }
+        void findShortestPath(Node *to,Node *from){
+
         }
         //test function 
         void jump(int h,int w){
@@ -284,12 +320,14 @@ int main()
     
     //algorithm 1
     //counting all dsitance to charger(by BFS) and enter maxheap
-    queue <Node> BFS_q;
+    q.setSize(WalkableBlockNumbers);
+    queue BFS_q(WalkableBlockNumbers);
+    q.push(charger);
     maxheap m(WalkableBlockNumbers);
     BFS_q.push(charger);
     field->setData(charger,1);//set R=1 temporary 
-    while(BFS_q._head()!=NULL){
-        Node *temp=BFS_q._head(),*temp2;
+    while(BFS_q.size()!=0){
+        Node *temp=BFS_q.front(),*temp2;
         m.insert(temp);
         BFS_q.pop();
         //visit left
@@ -319,11 +357,16 @@ int main()
     }
     field->setData(charger,-1);//recover R=-1
 
-
+    //move to afrest block in shortest path
 
 
     //testing
     field->print();
+    for(int i=0;i<10;i++){
+        bot->moveOneStep();
+    }
+    field->print();
+    q.printAll();
     m.print();
 
     /*cout << q.size() << endl ;
