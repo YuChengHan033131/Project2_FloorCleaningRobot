@@ -6,16 +6,9 @@ class Node{
     private:
         int h;
         int w;
-        Node *next=NULL;
     public:
         Node(int h,int w):h(h),w(w){}
         Node(){}
-        Node *_next(){
-            return next;
-        }
-        void setNext(Node *next){
-            this->next=next;
-        }
         int _h(){
             return h;
         }
@@ -25,6 +18,102 @@ class Node{
         void setData(int h,int w){
             this->h=h;
             this->w=w;
+        }
+};
+class Node_p{
+    private:
+        int h;
+        int w;
+        Node_p *previous=NULL;
+    public:
+        Node_p(int h,int w):h(h),w(w){}
+        Node_p(Node_p *node){
+            h=node->_h();
+            w=node->_w();
+        }
+        Node_p(Node *node){
+            h=node->_h();
+            w=node->_w();
+        }
+        Node_p(){}
+        int _h(){
+            return h;
+        }
+        int _w(){
+            return w;
+        }
+        void setData(int h,int w){
+            this->h=h;
+            this->w=w;
+        }
+        void setPrevious(Node_p *node){
+            previous=node;
+        }
+};
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class Tile{
+    private:
+        bool cleaned;
+        int data;//cleaness: 1=wall,smaller the number is, cleaner the floor is
+        int distance=0;
+        int h;
+        int w;
+        Tile *previous=NULL;
+    public:
+        Tile(){}
+        int _data(){
+            return data;
+        }
+        void setup(int h,int w,int data){
+            this->h=h;
+            this->w=w;
+            if(data>1){
+                this->data=0;
+                cleaned=false;
+            }else if(data<-1||data==-1){
+                this->data=-1;
+                cleaned=true;
+            }else{
+                this->data=1;
+            }
+        }
+        void setPrevious(Tile *node){
+            previous=node;
+        }
+        void setData(int data){
+            this->data=data;
+        }
+        void setDistance(int distance){
+            this->distance=distance;
+        }
+        void updateData(Tile *node){
+            //ever visited
+            if(distance<node->distance+1){
+                return;
+            }else if(distance==node->distance+1){
+                if(data<node->data){//means data is cleaner than node->data
+                    data=node->data+(cleaned?-1:0);
+                    previous=node;
+                }
+            }else{//distance is smaller
+                distance=node->distance+1;
+                previous=node;
+            }
+        }
+        int _h(){
+            return h;
+        }
+        int _w(){
+            return w;
+        }
+        Tile *_previous(){
+            return previous;
+        }
+        int _distance(){
+            return distance;
+        }
+        bool _cleaned(){
+            return cleaned;
         }
 };
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -46,7 +135,15 @@ public:
     int _data(Node *node){
         return head[node->_h() * W + node->_w()];
     }
-
+    int _data(Node_p *node){
+        return head[node->_h() * W + node->_w()];
+    }
+    int _H(){
+        return H;
+    }
+    int _W(){
+        return W;
+    }
     //test function
     void print()
     {
@@ -56,12 +153,12 @@ public:
             {
                 if (this->_data(i, j) ==-1)
                 {
-                    cout << " R";
+                    cout << "  R";
                 }
                 else
                 {   
                     if(this->_data(i, j)<10 && this->_data(i, j)>0) cout << " " ;
-                    cout << this->_data(i, j) ;
+                    cout << " " << this->_data(i, j) ;
                 }
             }
             cout << endl ;
@@ -78,40 +175,41 @@ public:
 };
 Field *field;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+template <class T>
 class queue{
     private:
-        Node **head;
+        T **head;
         int _front=-1;
         int _back=-1;
         int _size;
     public:
     queue(){};
     queue(int size):_size(size){
-        head = new Node* [_size];
+        head = new T* [_size];
         for(int i=0;i<_size;i++){
             head[i]=NULL;
         }
     }
     void setSize(int size){
         _size=size;
-        head = new Node* [_size];
+        head = new T* [_size];
         for(int i=0;i<_size;i++){
             head[i]=NULL;
         }
     }
-    Node *front(){
+    T *front(){
         if(_front==-1){
             cout << "error! queue is empty" ;
         }
         return head[_front];
     }
-    Node *back(){
+    T *back(){
         if(_front==-1){
             cout << "error! queue is empty" ;
         }
         return head[_back];
     }
-    void push(Node *node){
+    void push(T *node){
         if(_front==-1){
             _front=0;
             _back=0;
@@ -158,8 +256,16 @@ class queue{
            }
        }
     }
+    void reset(){
+        delete(head);
+    }
 };
-queue q;
+queue <Node> q;
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class stack{
+    private:
+
+};
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Robot{
     private:
@@ -195,7 +301,104 @@ class Robot{
             //no dirty block to walk
             findNearestDirtBlock();
         }
-        void findShortestPath(Node *to,Node *from){
+        void findShortestPath(Node *_from,Node *_to,int nodeNumbers){//by BFS 
+            //construct a matrix "similar" to field
+           Tile **grid=new Tile* [field->_H()];
+           for(int i=0;i<field->_H();i++){
+               grid[i]=new Tile[field->_W()];
+           }
+           for(int i=0;i<field->_H();i++){
+               for(int j=0;j<field->_W();j++){
+                   grid[i][j].setup(i,j,field->_data(i,j));
+               }
+           }
+            Tile *from=&grid[_from->_h()][_from->_w()];
+            from->setPrevious(from);
+            //counting path beside destination
+            int count=0,paths=((grid[_to->_h()][_to->_w()-1]._data()==1)?0:1)+
+                              ((grid[_to->_h()-1][_to->_w()]._data()==1)?0:1)+
+                              ((grid[_to->_h()][_to->_w()+1]._data()==1)?0:1)+
+                              ((grid[_to->_h()+1][_to->_w()]._data()==1)?0:1);
+
+           //start finding
+           queue <Tile> q(nodeNumbers);
+           q.push(from);
+           while(q.size()!=0){
+               Tile *temp=q.front(),*temp2;
+                q.pop();
+                //visit left
+                temp2=&grid[temp->_h()][temp->_w()-1];
+                if(temp2->_data()!=1){//can walk
+                    if(temp2->_previous()==NULL){//never visited
+                        temp2->setDistance(temp->_distance()+1);
+                        temp2->setData(temp->_data()+(temp2->_cleaned()?-1:0));
+                        temp2->setPrevious(temp);
+                        q.push(temp2);
+                    }else{//ever walk
+                        temp2->updateData(temp);
+                    }
+                    if(temp2->_h()==_to->_h()&&temp2->_w()==_to->_w()){
+                        count++;
+                    }
+                }
+                //visit up
+                temp2=&grid[temp->_h()-1][temp->_w()];
+                if(temp2->_data()!=1){//can walk
+                    if(temp2->_previous()==NULL){//never visited
+                        temp2->setDistance(temp->_distance()+1);
+                        temp2->setData(temp->_data()+(temp2->_cleaned()?-1:0));
+                        temp2->setPrevious(temp);
+                        q.push(temp2);
+                    }else{//ever walk
+                        temp2->updateData(temp);
+                    }
+                    if(temp2->_h()==_to->_h()&&temp2->_w()==_to->_w()){
+                        count++;
+                    }
+                }
+                //visit right
+                temp2=&grid[temp->_h()][temp->_w()+1];
+                if(temp2->_data()!=1){//can walk
+                    if(temp2->_previous()==NULL){//never visited
+                        temp2->setDistance(temp->_distance()+1);
+                        temp2->setData(temp->_data()+(temp2->_cleaned()?-1:0));
+                        temp2->setPrevious(temp);
+                        q.push(temp2);
+                    }else{//ever walk
+                        temp2->updateData(temp);
+                    }
+                    if(temp2->_h()==_to->_h()&&temp2->_w()==_to->_w()){
+                        count++;
+                    }
+                }
+                //visit down
+                temp2=&grid[temp->_h()+1][temp->_w()];
+                if(temp2->_data()!=1){//can walk
+                    if(temp2->_previous()==NULL){//never visited
+                        temp2->setDistance(temp->_distance()+1);
+                        temp2->setData(temp->_data()+(temp2->_cleaned()?-1:0));
+                        temp2->setPrevious(temp);
+                        q.push(temp2);
+                    }else{//ever walk
+                        temp2->updateData(temp);
+                    }
+                    if(temp2->_h()==_to->_h()&&temp2->_w()==_to->_w()){
+                        count++;
+                    }
+                }
+                //find destination enough times
+                /*if(count==paths){
+                    break;
+                }*/
+            }
+            q.reset();
+            //out put path
+            Tile *temp=&grid[_to->_h()][_to->_w()];
+            while(temp!=from){
+                //for test should change to stack
+                cout << temp->_h() << " " << temp->_w() << endl ;
+                temp=temp->_previous();
+            }
 
         }
         //test function 
@@ -321,7 +524,7 @@ int main()
     //algorithm 1
     //counting all dsitance to charger(by BFS) and enter maxheap
     q.setSize(WalkableBlockNumbers);
-    queue BFS_q(WalkableBlockNumbers);
+    queue <Node>BFS_q(WalkableBlockNumbers);
     q.push(charger);
     maxheap m(WalkableBlockNumbers);
     BFS_q.push(charger);
@@ -361,13 +564,15 @@ int main()
 
 
     //testing
-    field->print();
-    for(int i=0;i<10;i++){
+    bot->jump(1,5);
+    for(int i=0;i<12;i++){
         bot->moveOneStep();
     }
     field->print();
-    q.printAll();
-    m.print();
+    bot->findShortestPath(new Node(1,1),new Node(4,6),WalkableBlockNumbers);
+
+    
+
 
     /*cout << q.size() << endl ;
     q.printAll();*/
