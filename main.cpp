@@ -2,55 +2,6 @@
 #include <iostream>
 #include <fstream>
 using namespace std;
-class Node{
-    private:
-        int h;
-        int w;
-    public:
-        Node(int h,int w):h(h),w(w){}
-        Node(){}
-        int _h(){
-            return h;
-        }
-        int _w(){
-            return w;
-        }
-        void setData(int h,int w){
-            this->h=h;
-            this->w=w;
-        }
-};
-class Node_p{
-    private:
-        int h;
-        int w;
-        Node_p *previous=NULL;
-    public:
-        Node_p(int h,int w):h(h),w(w){}
-        Node_p(Node_p *node){
-            h=node->_h();
-            w=node->_w();
-        }
-        Node_p(Node *node){
-            h=node->_h();
-            w=node->_w();
-        }
-        Node_p(){}
-        int _h(){
-            return h;
-        }
-        int _w(){
-            return w;
-        }
-        void setData(int h,int w){
-            this->h=h;
-            this->w=w;
-        }
-        void setPrevious(Node_p *node){
-            previous=node;
-        }
-};
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Tile{
     private:
         bool cleaned;
@@ -117,6 +68,28 @@ class Tile{
         }
 };
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class Node{
+    private:
+        int h;
+        int w;
+    public:
+        Node(int h,int w):h(h),w(w){}
+        Node(Tile *tile){
+            h=tile->_h();
+            w=tile->_w();
+        }
+        Node(){}
+        int _h(){
+            return h;
+        }
+        int _w(){
+            return w;
+        }
+        void setData(int h,int w){
+            this->h=h;
+            this->w=w;
+        }
+};
 class Field
 {
 private:
@@ -133,9 +106,6 @@ public:
         return head[h * W + w];
     }
     int _data(Node *node){
-        return head[node->_h() * W + node->_w()];
-    }
-    int _data(Node_p *node){
         return head[node->_h() * W + node->_w()];
     }
     int _H(){
@@ -232,6 +202,17 @@ class queue{
             _front=(_front+1)%_size;
         }
     }
+    void pull(){
+        if(_front==-1){
+            cout << "error!nothing to pull" << endl;
+        }
+        else if(_front==_back){
+            _front=-1;
+            _back=-1;
+        }else{
+            _back=(_back+_size-1)%_size;
+        }
+    }
     int size(){
         if(_front==-1){
             return 0;
@@ -258,14 +239,12 @@ class queue{
     }
     void reset(){
         delete(head);
+        _front=-1;
+        _back=-1;
+        delete(_size);
     }
 };
 queue <Node> q;
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class stack{
-    private:
-
-};
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Robot{
     private:
@@ -275,11 +254,37 @@ class Robot{
         int battery;
         int fullBattery;
     public:
-        Robot(int initialH,int initialW,int battery):h(initialH),w(initialW),battery(battery),fullBattery(battery){        }
-        void findNearestDirtBlock(){
-            cout << "findNearestDirtBlock" << endl;
+        Robot(int initialH,int initialW,int battery):h(initialH),w(initialW),battery(battery),fullBattery(battery){}
+        int _battery(){
+            return battery;
         }
-        void moveOneStep(){
+        void findNearestDirtyBlock(){
+            cout << "findNearestDirtyBlock" << endl;
+        }
+        void moveOneStepTo(Node *node){
+            int tempH=node->_h(),tempW=node->_w();
+            if(field->_data(node)!=1&&
+               ((tempH==h&&tempW==w-1)||//node is reachable and walkable
+               (tempH==h-1&&tempW==w)||
+               (tempH==h&&tempW==w+1)||
+               (tempH==h+1&&tempW==w)))
+            {
+                h=tempH;
+                w=tempW;
+                q.push(node);
+                if(field->_data(h,w)!=-1){
+                    battery--;
+                    if(field->_data(h,w)>1){//unclean
+                        field->setData(h,w,field->_data(h,w)*-1);
+                    }
+                }else{
+                        battery=fullBattery;
+                }
+            }else{
+                cout << "error!robot can't goes there." << endl ;
+            }
+        }
+        void moveOneStepAlongRight(){
             direction=(direction+3)%4;
             for(int i=0;i<4;i++){
                 int _h=direction%2*(direction-2),_w=(direction+1)%2*(direction-1);//amount of left offset according to direction 
@@ -290,7 +295,9 @@ class Robot{
                     q.push(new Node(h,w));
                     if(field->_data(h,w)!=-1){
                         battery--;
-                        field->setData(h,w,field->_data(h,w)*-1);
+                        if(field->_data(h,w)>1){//unclean
+                            field->setData(h,w,field->_data(h,w)*-1);
+                        }
                     }else{
                         battery=fullBattery;
                     }
@@ -299,9 +306,9 @@ class Robot{
                 direction=(direction+1)%4;
             }
             //no dirty block to walk
-            findNearestDirtBlock();
+            findNearestDirtyBlock();
         }
-        void findShortestPath(Node *_from,Node *_to,int nodeNumbers){//by BFS 
+        queue <Node> *findShortestPath(Node *_from,Node *_to,int nodeNumbers){//by BFS 
             //construct a matrix "similar" to field
            Tile **grid=new Tile* [field->_H()];
            for(int i=0;i<field->_H();i++){
@@ -387,17 +394,27 @@ class Robot{
                     }
                 }
                 //find destination enough times
-                /*if(count==paths){
+                if(count==paths){
                     break;
-                }*/
+                }
             }
-            q.reset();
-            //out put path
+            delete(&q);
+            queue <Node> *q1=new queue<Node>(nodeNumbers);
+            //output path
             Tile *temp=&grid[_to->_h()][_to->_w()];
             while(temp!=from){
-                //for test should change to stack
-                cout << temp->_h() << " " << temp->_w() << endl ;
+                q1->push(new Node(temp));
                 temp=temp->_previous();
+            }
+            delete(grid);
+            return q1;
+        }
+        void moveTo(Node *_to,int nodeNumbers){
+            queue <Node> *tempQ=findShortestPath(new Node(h,w),_to,nodeNumbers);
+            while(tempQ->size()!=0){
+                Node *temp=tempQ->back();
+                tempQ->pull();
+                moveOneStepTo(temp);
             }
 
         }
@@ -564,18 +581,17 @@ int main()
 
 
     //testing
-    bot->jump(1,5);
-    for(int i=0;i<12;i++){
-        bot->moveOneStep();
-    }
     field->print();
-    bot->findShortestPath(new Node(1,1),new Node(4,6),WalkableBlockNumbers);
+    bot->moveTo(new Node(4,4),WalkableBlockNumbers);
+    bot->moveTo(new Node(1,6),WalkableBlockNumbers);
+    bot->moveTo(new Node(4,1),WalkableBlockNumbers);
+    field->print();
 
     
 
-
-    /*cout << q.size() << endl ;
-    q.printAll();*/
+    cout << endl ;
+    cout << q.size() ;
+    q.printAll();
     
 
 
