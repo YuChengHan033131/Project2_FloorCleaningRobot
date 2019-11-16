@@ -171,13 +171,27 @@ public:
             {
                 if (this->_data(i, j) ==-1)
                 {
-                    cout << "  R";
+                    cout << "  R ";
                 }
                 else
                 {   
-                    if(this->_data(i, j)<10 && this->_data(i, j)>0) cout << " " ;
-                    cout << " " << this->_data(i, j) ;
+                    if(_data(i,j)>99){
+                        cout << " " ;
+                    }else if(_data(i,j)>9){
+                        cout << "  " ;
+                    }else if(_data(i,j)>0){
+                        cout << "   " ;
+                    }else if(_data(i,j)>-10){
+                        cout << "  " ;
+                    }else if(_data(i,j)>-100){
+                        cout << " " ;
+                    }
+                    cout << this->_data(i, j) ;
                 }
+                //test
+                /*if(_data(i,j)>1){
+                    cout << "@" ;
+                }*/
             }
             cout << endl ;
         }
@@ -305,7 +319,7 @@ class queue{
         delete(head);
         _front=-1;
         _back=-1;
-        delete(_size);
+        delete(&_size);
     }
     void destroy(){
         while(_front!=-1){
@@ -325,7 +339,7 @@ class Robot{
         int battery;
         int fullBattery;
         int houseSize;
-        int cleanedBlock=0;
+        //int cleanedBlock=0;
         bool power=true;
         Node *charger;
     public:
@@ -338,7 +352,15 @@ class Robot{
         void setHouseSize(int houseSize){
             this->houseSize=houseSize;
         }
-        bool isNotDone(){
+        bool notInWall(int h,int w){
+            
+            if(h<=0||h>=field->_H()-1||w<=0||w>=field->_W()-1){
+                return false;
+            }else{
+                return true;
+            }
+        }
+        /*bool isNotDone(){
             if(cleanedBlock<houseSize){
                 return true;
             }else if(cleanedBlock==houseSize){
@@ -347,7 +369,7 @@ class Robot{
                 cout << "error!cleanedBlock is largger than houseSize" << endl ;
                 return false;
             }
-        }
+        }*/
         void knockedOff(){//back to charger
             moveTo(charger);
             power=false;
@@ -391,22 +413,22 @@ class Robot{
                     largest=temp;
                 }
                 //visit left
-                if(found==false&&tempfield->_data(temp->_h(),temp->_w()-1)==0){//means unvisited and not wall
+                if(found==false&&tempfield->_data(temp->_h(),temp->_w()-1)==0&&notInWall(temp->_h(),temp->_w()-1)){//means unvisited and not wall
                     tempQ.push(new Node(temp->_h(),temp->_w()-1));
                     tempfield->setData(temp->_h(),temp->_w()-1,tempfield->_data(temp)+1);
                 }
                 //visit up
-                if(found==false&&tempfield->_data(temp->_h()-1,temp->_w())==0){//means unvisited and not wall
+                if(found==false&&tempfield->_data(temp->_h()-1,temp->_w())==0&&notInWall(temp->_h()-1,temp->_w())){//means unvisited and not wall
                     tempQ.push(new Node(temp->_h()-1,temp->_w()));
                     tempfield->setData(temp->_h()-1,temp->_w(),tempfield->_data(temp)+1);
                 }
                 //visit right
-                if(found==false&&tempfield->_data(temp->_h(),temp->_w()+1)==0){//means unvisited and not wall
+                if(found==false&&tempfield->_data(temp->_h(),temp->_w()+1)==0&&notInWall(temp->_h(),temp->_w()+1)){//means unvisited and not wall
                     tempQ.push(new Node(temp->_h(),temp->_w()+1));
                     tempfield->setData(temp->_h(),temp->_w()+1,tempfield->_data(temp)+1);
                 }
                 //visit down
-                if(found==false&&tempfield->_data(temp->_h()+1,temp->_w())==0){//means unvisited and not wall
+                if(found==false&&tempfield->_data(temp->_h()+1,temp->_w())==0&&notInWall(temp->_h()+1,temp->_w())){//means unvisited and not wall
                     tempQ.push(new Node(temp->_h()+1,temp->_w()));
                     tempfield->setData(temp->_h()+1,temp->_w(),tempfield->_data(temp)+1);
                 }
@@ -422,63 +444,6 @@ class Robot{
             }
 
         }
-        /*void moveToNearestDirtyBlock(){//by BFS
-            //find nearest dirty block
-            NodeB *temp,*temp0,*temp1,*temp2,*temp3;
-            Node *largest=NULL;
-            queue <NodeB> tempQ(houseSize);
-            tempQ.push(new NodeB(h,w));
-            while(tempQ.size()!=0){
-                temp=tempQ.front();
-                temp->setVisited(true);
-                //chenck if charger is in wall
-
-                tempQ.pop();
-                //visit left
-                temp0=new NodeB(temp->_h(),temp->_w()-1);
-                if(field->_data(temp0)!=1&&temp0->_visited()==false){
-                    tempQ.push(temp0);
-                    temp0->setVisited(true);
-                }
-                //visit up
-                temp1=new NodeB(temp->_h()-1,temp->_w());
-                if(field->_data(temp1)!=1&&temp1->_visited()==false){
-                    tempQ.push(temp1);
-                    temp1->setVisited(true);
-                }
-                //visit right
-                temp2=new NodeB(temp->_h(),temp->_w()+1);
-                if(field->_data(temp2)!=1&&temp2->_visited()==false){
-                    tempQ.push(temp2);
-                    temp2->setVisited(true);
-                }
-                //visit down
-                temp3=new NodeB(temp->_h()+1,temp->_w());
-                if(field->_data(temp3)!=1&&temp3->_visited()==false){
-                    tempQ.push(temp3);
-                    temp3->setVisited(true);
-                }
-
-                //find farest dirty block 
-                NodeB *direction[4]={temp0,temp1,temp2,temp3};
-                for(int i=0;i<4;i++){
-                    if(field->_data(direction[i])>1){
-                        if(largest==NULL||field->_data(largest)<field->_data(direction[i])){
-                            largest=new Node(direction[i]->_h(),direction[i]->_w());
-                        }
-                    }
-                }
-                if(largest!=NULL){//found dirty block
-                    break;
-                }
-            }
-            //temp0=nearest dirty block
-            if(tempQ.size()!=0){
-                moveTo(largest);
-            }else{//no more dirty block
-                knockedOff();
-            }
-        }*/
         bool moveOneStepTo(Node *node){
             bool currentGridIsNotCleaned=false;
             int tempH=node->_h(),tempW=node->_w();
@@ -496,7 +461,7 @@ class Robot{
                     if(field->_data(h,w)>1){//unclean
                         field->setData(h,w,field->_data(h,w)*-1);
                         currentGridIsNotCleaned=true;
-                        cleanedBlock++;
+                        //cleanedBlock++;
                     }
                 }else{
                         battery=fullBattery;
@@ -531,7 +496,7 @@ class Robot{
                         battery--;
                         if(field->_data(h,w)>1){//unclean
                             field->setData(h,w,field->_data(h,w)*-1);
-                            cleanedBlock++;
+                            //cleanedBlock++;
                         }
                     }else{
                         battery=fullBattery;
@@ -543,7 +508,187 @@ class Robot{
             //no dirty block to walk
             moveToNearestDirtyBlock();
         }
-        queue <Node> *findShortestPath(Node *_from,Node *_to){//by BFS 
+        queue <Node> *findShortestPath(Node *_from,Node *_to){
+            //construct a matrix "similar" to field
+            Field *tempField=new Field(field);//used to store the smallest number of cleaned block needed to pass to get to here
+            Field *distance=new Field(field);//used to store distance to "from"
+            for(int i=0;i<tempField->_H();i++){
+                for(int j=0;j<tempField->_W();j++){
+                    distance->setData(i,j,-1);
+                    if(field->_data(i,j)==1){
+                        tempField->setData(i,j,1);
+                    }else{
+                        tempField->setData(i,j,0);
+                    }
+                }
+            }
+            Node ***previous=new Node**[field->_H()];
+            for(int i=0;i<field->_H();i++){
+                previous[i]=new Node*[field->_W()];
+            }
+            //counting path beside destination
+            int count=0,paths;
+            if(notInWall(_to->_h(),_to->_w())){
+                paths=((tempField->_data(_to->_h(),_to->_w()-1)==0)?1:0)+
+                      ((tempField->_data(_to->_h()-1,_to->_w())==0)?1:0)+
+                      ((tempField->_data(_to->_h(),_to->_w()+1)==0)?1:0)+
+                      ((tempField->_data(_to->_h()+1,_to->_w())==0)?1:0);
+            }else{
+                paths=1;
+            }
+            //start finding
+            queue <Node> *Q=new queue <Node> (houseSize);
+            previous[_from->_h()][_from->_w()]=_from;
+            distance->setData(_from,0);
+            tempField->setData(_from,-1);
+            //search from _from
+            //visit left
+            if(tempField->_data(_from->_h(),_from->_w()-1)!=1&&notInWall(_from->_h(),_from->_w()-1)){
+                if((_from->_h()==_to->_h())&&(_from->_w()-1==_to->_w())){
+                        count++;
+                }
+                tempField->setData(_from->_h(),_from->_w()-1,tempField->_data(_from)+(field->_data(_from->_h(),_from->_w()-1)<0)?-1:0);
+                distance->setData(_from->_h(),_from->_w()-1,distance->_data(_from)+1);
+                previous[_from->_h()][_from->_w()-1]=_from;
+                Q->push(new Node(_from->_h(),_from->_w()-1));
+            }
+            //visit up
+            if(tempField->_data(_from->_h()-1,_from->_w())!=1&&notInWall(_from->_h()-1,_from->_w())){
+                if((_from->_h()-1==_to->_h())&&(_from->_w()==_to->_w())){
+                        count++;
+                }
+                tempField->setData(_from->_h()-1,_from->_w(),tempField->_data(_from)+(field->_data(_from->_h()-1,_from->_w())<0)?-1:0);
+                distance->setData(_from->_h()-1,_from->_w(),distance->_data(_from)+1);
+                previous[_from->_h()-1][_from->_w()]=_from;
+                Q->push(new Node(_from->_h()-1,_from->_w()));
+            }
+            //visit right
+            if(tempField->_data(_from->_h(),_from->_w()+1)!=1&&notInWall(_from->_h(),_from->_w()+1)){
+                if((_from->_h()==_to->_h())&&(_from->_w()+1==_to->_w())){
+                        count++;
+                }
+                tempField->setData(_from->_h(),_from->_w()+1,tempField->_data(_from)+(field->_data(_from->_h(),_from->_w()+1)<0)?-1:0);
+                distance->setData(_from->_h(),_from->_w()+1,distance->_data(_from)+1);
+                previous[_from->_h()][_from->_w()+1]=_from;
+                Q->push(new Node(_from->_h(),_from->_w()+1));
+            }
+            //visit down
+            if(tempField->_data(_from->_h()+1,_from->_w())!=1&&notInWall(_from->_h()+1,_from->_w())){
+                if((_from->_h()+1==_to->_h())&&(_from->_w()==_to->_w())){
+                        count++;
+                }
+                tempField->setData(_from->_h()+1,_from->_w(),tempField->_data(_from)+(field->_data(_from->_h()+1,_from->_w())<0)?-1:0);
+                distance->setData(_from->_h()+1,_from->_w(),distance->_data(_from)+1);
+                previous[_from->_h()+1][_from->_w()]=_from;
+                Q->push(new Node(_from->_h()+1,_from->_w()));
+            }
+            while(Q->size()!=0){
+                Node *temp=Q->front();
+                Q->pop();
+                //visit left
+                if(tempField->_data(temp->_h(),temp->_w()-1)!=1){//means not wall
+                    if((temp->_h()==_to->_h())&&(temp->_w()-1==_to->_w())){
+                        count++;
+                    }
+                    if(distance->_data(temp->_h(),temp->_w()-1)==-1){//never visited
+                        tempField->setData(temp->_h(),temp->_w()-1,tempField->_data(temp)+(field->_data(temp->_h(),temp->_w()-1)<0)?-1:0);
+                        distance->setData(temp->_h(),temp->_w()-1,distance->_data(temp)+1);
+                        previous[temp->_h()][temp->_w()-1]=temp;
+                        Q->push(new Node(temp->_h(),temp->_w()-1));
+                    }else if(notInWall(temp->_h(),temp->_w()-1)){//ever visited
+                        if(distance->_data(temp->_h(),temp->_w()-1)>distance->_data(temp)+1){//compare distance
+                            distance->setData(temp->_h(),temp->_w()-1,distance->_data(temp)+1);
+                            previous[temp->_h()][temp->_w()-1]=temp;
+                        }else if(distance->_data(temp->_h(),temp->_w()-1)==distance->_data(temp)+1){
+                            if(tempField->_data(temp->_h(),temp->_w()-1)<tempField->_data(temp)+(field->_data(temp->_h(),temp->_w()-1)<0)?-1:0){//compare tempField
+                                tempField->setData(temp->_h(),temp->_w()-1,tempField->_data(temp)+(field->_data(temp->_h(),temp->_w()-1)<0)?-1:0);
+                                previous[temp->_h()][temp->_w()-1]=temp;
+                            }
+                        }
+                    }
+                }
+                //visit up
+                if(tempField->_data(temp->_h()-1,temp->_w())!=1){//means not wall
+                    if((temp->_h()-1==_to->_h())&&(temp->_w()==_to->_w())){
+                        count++;
+                    }
+                    if(distance->_data(temp->_h()-1,temp->_w())==-1){//never visited
+                        tempField->setData(temp->_h()-1,temp->_w(),tempField->_data(temp)+(field->_data(temp->_h()-1,temp->_w())<0)?-1:0);
+                        distance->setData(temp->_h()-1,temp->_w(),distance->_data(temp)+1);
+                        previous[temp->_h()-1][temp->_w()]=temp;
+                        Q->push(new Node(temp->_h()-1,temp->_w()));
+                    }else if(notInWall(temp->_h()-1,temp->_w())){//ever visited
+                        if(distance->_data(temp->_h()-1,temp->_w())>distance->_data(temp)+1){//compare distance
+                            distance->setData(temp->_h()-1,temp->_w(),distance->_data(temp)+1);
+                            previous[temp->_h()-1][temp->_w()]=temp;
+                        }else if(distance->_data(temp->_h()-1,temp->_w())==distance->_data(temp)+1){
+                            if(tempField->_data(temp->_h()-1,temp->_w())<tempField->_data(temp)+(field->_data(temp->_h()-1,temp->_w())<0)?-1:0){//compare tempField
+                                tempField->setData(temp->_h()-1,temp->_w(),tempField->_data(temp)+(field->_data(temp->_h()-1,temp->_w())<0)?-1:0);
+                                previous[temp->_h()-1][temp->_w()]=temp;
+                            }
+                        }
+                    }
+                }
+                //visit right
+                if(tempField->_data(temp->_h(),temp->_w()+1)!=1){//means not wall
+                    if((temp->_h()==_to->_h())&&(temp->_w()+1==_to->_w())){
+                        count++;
+                    }
+                    if(distance->_data(temp->_h(),temp->_w()+1)==-1){//never visited
+                        tempField->setData(temp->_h(),temp->_w()+1,tempField->_data(temp)+(field->_data(temp->_h(),temp->_w()+1)<0)?-1:0);
+                        distance->setData(temp->_h(),temp->_w()+1,distance->_data(temp)+1);
+                        previous[temp->_h()][temp->_w()+1]=temp;
+                        Q->push(new Node(temp->_h(),temp->_w()+1));
+                    }else if(notInWall(temp->_h(),temp->_w()+1)){//ever visited
+                        if(distance->_data(temp->_h(),temp->_w()+1)>distance->_data(temp)+1){//compare distance
+                            distance->setData(temp->_h(),temp->_w()+1,distance->_data(temp)+1);
+                            previous[temp->_h()][temp->_w()+1]=temp;
+                        }else if(distance->_data(temp->_h(),temp->_w()+1)==distance->_data(temp)+1){
+                            if(tempField->_data(temp->_h(),temp->_w()+1)<tempField->_data(temp)+(field->_data(temp->_h(),temp->_w()+1)<0)?-1:0){//compare tempField
+                                tempField->setData(temp->_h(),temp->_w()+1,tempField->_data(temp)+(field->_data(temp->_h(),temp->_w()+1)<0)?-1:0);
+                                previous[temp->_h()][temp->_w()+1]=temp;
+                            }
+                        }
+                    }
+                }
+                //visit down
+                if(tempField->_data(temp->_h()+1,temp->_w())!=1){//means not wall
+                    if((temp->_h()+1==_to->_h())&&(temp->_w()==_to->_w())){
+                        count++;
+                    }
+                    if(distance->_data(temp->_h()+1,temp->_w())==-1){//never visited
+                        tempField->setData(temp->_h()+1,temp->_w(),tempField->_data(temp)+(field->_data(temp->_h()+1,temp->_w())<0)?-1:0);
+                        distance->setData(temp->_h()+1,temp->_w(),distance->_data(temp)+1);
+                        previous[temp->_h()+1][temp->_w()]=temp;
+                        Q->push(new Node(temp->_h()+1,temp->_w()));
+                    }else if(notInWall(temp->_h()+1,temp->_w())){//ever visited
+                        if(distance->_data(temp->_h()+1,temp->_w())>distance->_data(temp)+1){//compare distance
+                            distance->setData(temp->_h()+1,temp->_w(),distance->_data(temp)+1);
+                            previous[temp->_h()+1][temp->_w()]=temp;
+                        }else if(distance->_data(temp->_h()+1,temp->_w())==distance->_data(temp)+1){
+                            if(tempField->_data(temp->_h()+1,temp->_w())<tempField->_data(temp)+(field->_data(temp->_h()+1,temp->_w())<0)?-1:0){//compare tempField
+                                tempField->setData(temp->_h()+1,temp->_w(),tempField->_data(temp)+(field->_data(temp->_h()+1,temp->_w())<0)?-1:0);
+                                previous[temp->_h()+1][temp->_w()]=temp;
+                            }
+                        }
+                    }
+                }
+                
+                //find destination enough times
+                if(count==paths){
+                    break;
+                }
+            }
+            Q->reset();
+            Q->setSize(houseSize);
+            Node *temp=_to;
+            while(temp!=_from){
+                Q->push(temp);
+                temp=previous[temp->_h()][temp->_w()];
+            }
+            return Q;
+        }
+        /*queue <Node> *findShortestPath(Node *_from,Node *_to){//by BFS 
             //construct a matrix "similar" to field
            Tile **grid=new Tile* [field->_H()];
            for(int i=0;i<field->_H();i++){
@@ -570,7 +715,7 @@ class Robot{
                 q.pop();
                 //visit left
                 temp2=&grid[temp->_h()][temp->_w()-1];
-                if(temp2->_data()!=1){//can walk
+                if(temp2->_data()!=1&&notInWall(temp->_h(),temp->_w()-1)){//can walk
                     if(temp2->_previous()==NULL){//never visited
                         temp2->setDistance(temp->_distance()+1);
                         temp2->setData(temp->_data()+(temp2->_cleaned()?-1:0));
@@ -585,7 +730,7 @@ class Robot{
                 }
                 //visit up
                 temp2=&grid[temp->_h()-1][temp->_w()];
-                if(temp2->_data()!=1){//can walk
+                if(temp2->_data()!=1&&notInWall(temp->_h()-1,temp->_w())){//can walk
                     if(temp2->_previous()==NULL){//never visited
                         temp2->setDistance(temp->_distance()+1);
                         temp2->setData(temp->_data()+(temp2->_cleaned()?-1:0));
@@ -600,7 +745,7 @@ class Robot{
                 }
                 //visit right
                 temp2=&grid[temp->_h()][temp->_w()+1];
-                if(temp2->_data()!=1){//can walk
+                if(temp2->_data()!=1&&notInWall(temp->_h(),temp->_w()+1)){//can walk
                     if(temp2->_previous()==NULL){//never visited
                         temp2->setDistance(temp->_distance()+1);
                         temp2->setData(temp->_data()+(temp2->_cleaned()?-1:0));
@@ -615,7 +760,7 @@ class Robot{
                 }
                 //visit down
                 temp2=&grid[temp->_h()+1][temp->_w()];
-                if(temp2->_data()!=1){//can walk
+                if(temp2->_data()!=1&&notInWall(temp->_h()+1,temp->_w())){//can walk
                     if(temp2->_previous()==NULL){//never visited
                         temp2->setDistance(temp->_distance()+1);
                         temp2->setData(temp->_data()+(temp2->_cleaned()?-1:0));
@@ -643,7 +788,7 @@ class Robot{
             }
             delete(grid);
             return q1;
-        }
+        }*/
         bool moveTo(Node *_to){
             if(h==_to->_h()&&w==_to->_w()){//destination=start
                 return true;
@@ -841,45 +986,37 @@ int main()
     BFS_q.push(charger);
     field->setData(charger,1);//set R=1 temporary 
     while(BFS_q.size()!=0){
-        Node *temp=BFS_q.front(),*temp2;
+        Node *temp=BFS_q.front();
         m.insert(temp);
         BFS_q.pop();
         //visit left
-        temp2= new Node(temp->_h(),temp->_w()-1);
-        if(field->_data(temp2)==0){//0 means unvisited
-            field->setData(temp2,field->_data(temp)+1);
-            BFS_q.push(temp2);
+        if(field->_data(temp->_h(),temp->_w()-1)==0&&bot->notInWall(temp->_h(),temp->_w()-1)){//0 means unvisited
+            field->setData(temp->_h(),temp->_w()-1,field->_data(temp)+1);
+            BFS_q.push(new Node(temp->_h(),temp->_w()-1));
         }
         //visit up
-        temp2= new Node(temp->_h()-1,temp->_w());
-        if(field->_data(temp2)==0){//0 means unvisited
-            field->setData(temp2,field->_data(temp)+1);
-            BFS_q.push(temp2);
+        if(field->_data(temp->_h()-1,temp->_w())==0&&bot->notInWall(temp->_h()-1,temp->_w())){//0 means unvisited
+            field->setData(temp->_h()-1,temp->_w(),field->_data(temp)+1);
+            BFS_q.push(new Node(temp->_h()-1,temp->_w()));
         }
         //visit right
-        temp2= new Node(temp->_h(),temp->_w()+1);
-        if(field->_data(temp2)==0){//0 means unvisited
-            field->setData(temp2,field->_data(temp)+1);
-            BFS_q.push(temp2);
+        if(field->_data(temp->_h(),temp->_w()+1)==0&&bot->notInWall(temp->_h(),temp->_w()+1)){//0 means unvisited
+            field->setData(temp->_h(),temp->_w()+1,field->_data(temp)+1);
+            BFS_q.push(new Node(temp->_h(),temp->_w()+1));
         }
         //visit down
-        temp2= new Node(temp->_h()+1,temp->_w());
-        if(field->_data(temp2)==0){//0 means unvisited
-            field->setData(temp2,field->_data(temp)+1);
-            BFS_q.push(temp2);
+        if(field->_data(temp->_h()+1,temp->_w())==0&&bot->notInWall(temp->_h()+1,temp->_w())){//0 means unvisited
+            field->setData(temp->_h()+1,temp->_w(),field->_data(temp)+1);
+            BFS_q.push(new Node(temp->_h()+1,temp->_w()));
         }
     }
     field->setData(charger,-1);//recover R=-1
 
-    field->print();//test
     //cleaning
     while(bot->powerIsOn()){
         bot->moveTo(m._rootNode());//move to farthest block in shortest path
-        field->print();//test
         bot->roaming();
-        field->print();//test
         bot->moveTo(charger);
-        field->print();//test
     }
 
     cout << endl ;
