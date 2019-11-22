@@ -59,6 +59,13 @@ public:
     int _W(){
         return W;
     }
+    void setData(int h, int w, int data)
+    {
+        head[h * W + w] = data;
+    }
+    void setData(Node *node,int data){
+        head[node->_h() * W + node->_w()] = data;
+    }
     //test function
     void print()
     {
@@ -90,12 +97,16 @@ public:
         }
         cout << endl;
     }
-    void setData(int h, int w, int data)
-    {
-        head[h * W + w] = data;
-    }
-    void setData(Node *node,int data){
-        head[node->_h() * W + node->_w()] = data;
+    void check(){
+        for (int i = 0; i < H; i++){
+            for (int j = 0; j < W; j++){
+                if (this->_data(i, j)>1){
+                    cout << "not clean!";
+                    return;
+                }
+            }
+        }
+        cout << "everything went on throughly." ;
     }
 };
 Field *field;
@@ -232,7 +243,6 @@ class Robot{
         int battery;
         int fullBattery;
         int houseSize;
-        //int cleanedBlock=0;
         bool power=true;
         Node *charger;
     public:
@@ -253,16 +263,6 @@ class Robot{
                 return true;
             }
         }
-        /*bool isNotDone(){
-            if(cleanedBlock<houseSize){
-                return true;
-            }else if(cleanedBlock==houseSize){
-                return false;
-            }else{
-                cout << "error!cleanedBlock is largger than houseSize" << endl ;
-                return false;
-            }
-        }*/
         void knockedOff(){//back to charger
             moveTo(charger);
             power=false;
@@ -800,9 +800,13 @@ int main()
 
     //cleaning
     while(bot->powerIsOn()){
-        bot->moveTo(m._rootNode());//move to farthest block in shortest path
-        bot->roaming();
-        bot->moveTo(charger);
+        if(field->_data(m._rootNode())>1){
+            bot->moveTo(m._rootNode());//move to farthest block in shortest path
+            bot->roaming();
+            bot->moveTo(charger);
+        }else{
+            bot->knockedOff();
+        }
     }
 
     cout << endl ;    
@@ -810,5 +814,8 @@ int main()
     of << q.size()-1 << endl;
     q.printAll(of);
     of.close();
+    field->check();
+    cout << q.size()-1 << endl ;
+    cout << WalkableBlockNumbers;
     return 0;
 }
