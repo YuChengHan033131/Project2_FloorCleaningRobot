@@ -239,7 +239,6 @@ class Robot{
     private:
         int h;
         int w;
-        int direction=0;//the direction robot heading.0=left,1=up,2=right,3=down
         int battery;
         int fullBattery;
         int houseSize;
@@ -308,7 +307,6 @@ class Robot{
                     }else{
                         largest=temp;
                     }
-                    
                     largest=temp;
                 }
                 //visit left
@@ -332,6 +330,7 @@ class Robot{
                     tempfield->setData(temp->_h()+1,temp->_w(),tempfield->_data(temp)+1);
                 }
             }
+            delete(tempfield);
             if(found){
                 if(!moveTo(largest)){//no enough battery
                     return false;
@@ -381,31 +380,6 @@ class Robot{
             }else{
                 return true;
             }
-        }
-        void moveOneStepAlongRight(){
-            direction=(direction+3)%4;
-            for(int i=0;i<4;i++){
-                int _h=direction%2*(direction-2),_w=(direction+1)%2*(direction-1);//amount of left offset according to direction 
-                if(field->_data(h+_h,w+_w)>1){
-                    //can walk
-                    h+=_h;
-                    w+=_w;
-                    q.push(new Node(h,w));
-                    if(field->_data(h,w)!=-1){
-                        battery--;
-                        if(field->_data(h,w)>1){//unclean
-                            field->setData(h,w,field->_data(h,w)*-1);
-                            //cleanedBlock++;
-                        }
-                    }else{
-                        battery=fullBattery;
-                    }
-                    return;
-                }
-                direction=(direction+1)%4;
-            }
-            //no dirty block to walk
-            moveToNearestDirtyBlock();
         }
         queue <Node> *findShortestPath(Node *_from,Node *_to){
             //construct a matrix "similar" to field
@@ -585,6 +559,8 @@ class Robot{
                 Q->push(temp);
                 temp=previous[temp->_h()][temp->_w()];
             }
+            delete(tempField);
+            delete(distance);
             return Q;
         }
         bool moveTo(Node *_to){
@@ -814,8 +790,6 @@ int main()
             bot->knockedOff();
         }
     }
-
-    cout << endl ;    
     ofstream of("final.path");
     of << q.size()-1 << endl;
     q.printAll(of);
