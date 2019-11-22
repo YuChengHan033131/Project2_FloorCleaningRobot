@@ -257,8 +257,14 @@ class Robot{
         }
         bool notInWall(int h,int w){
             
-            if(h<=0||h>=field->_H()-1||w<=0||w>=field->_W()-1){
+            if(h<0||h>field->_H()-1||w<0||w>field->_W()-1){
                 return false;
+            }else if(h==0||h==field->_H()-1||w==0||w==field->_W()-1){
+                if(field->_data(h,w)!=1){
+                    return true;
+                }else{
+                    return false;
+                }
             }else{
                 return true;
             }
