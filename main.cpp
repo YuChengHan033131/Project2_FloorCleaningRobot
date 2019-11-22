@@ -10,112 +10,12 @@ int abs(int num){
     }
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class Tile{
-    private:
-        bool cleaned;
-        int data;//cleaness: 1=wall,smaller the number is, cleaner the floor is
-        int distance=0;
-        int h;
-        int w;
-        Tile *previous=NULL;
-    public:
-        Tile(){}
-        int _data(){
-            return data;
-        }
-        void setup(int h,int w,int data){
-            this->h=h;
-            this->w=w;
-            if(data>1){
-                this->data=0;
-                cleaned=false;
-            }else if(data<-1||data==-1){
-                this->data=-1;
-                cleaned=true;
-            }else{
-                this->data=1;
-            }
-        }
-        void setPrevious(Tile *node){
-            previous=node;
-        }
-        void setData(int data){
-            this->data=data;
-        }
-        void setDistance(int distance){
-            this->distance=distance;
-        }
-        void updateData(Tile *node){
-            //ever visited
-            if(distance<node->distance+1){
-                return;
-            }else if(distance==node->distance+1){
-                if(data<node->data){//means data is cleaner than node->data
-                    data=node->data+(cleaned?-1:0);
-                    previous=node;
-                }
-            }else{//distance is smaller
-                distance=node->distance+1;
-                previous=node;
-            }
-        }
-        int _h(){
-            return h;
-        }
-        int _w(){
-            return w;
-        }
-        Tile *_previous(){
-            return previous;
-        }
-        int _distance(){
-            return distance;
-        }
-        bool _cleaned(){
-            return cleaned;
-        }
-};
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-class NodeB{
-    private:
-        int h;
-        int w;
-        bool visited=false;
-    public:
-        NodeB(int h,int w):h(h),w(w){}
-        NodeB(Tile *tile){
-            h=tile->_h();
-            w=tile->_w();
-        }
-        NodeB(){}
-        int _h(){
-            return h;
-        }
-        int _w(){
-            return w;
-        }
-        void setData(int h,int w){
-            this->h=h;
-            this->w=w;
-        }
-        void setVisited(bool visited){
-            this->visited=visited;
-        }
-        bool _visited(){
-            return visited;
-        }
-};
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 class Node{
     private:
         int h;
         int w;
     public:
         Node(int h,int w):h(h),w(w){}
-        Node(Tile *tile){
-            h=tile->_h();
-            w=tile->_w();
-        }
         Node(){}
         int _h(){
             return h;
@@ -153,9 +53,6 @@ public:
     int _data(Node *node){
         return head[node->_h() * W + node->_w()];
     }
-    int _data(NodeB *node){
-        return head[node->_h() * W + node->_w()];
-    }
     int _H(){
         return H;
     }
@@ -188,10 +85,6 @@ public:
                     }
                     cout << this->_data(i, j) ;
                 }
-                //test
-                /*if(_data(i,j)>1){
-                    cout << "@" ;
-                }*/
             }
             cout << endl ;
         }
@@ -301,14 +194,14 @@ class queue{
         }
        
     }
-    void printAll(){
+    void printAll(ofstream &of){
         if(_front==-1){
             cout << "error! nothing to print" << endl ;
             return ;
         }
        int temp=_front;
        while(1){
-           cout << head[temp]->_h() << " " << head[temp]->_w() << endl ;
+           of << head[temp]->_h() << " " << head[temp]->_w() << endl ;
            temp=(temp+1)%_size;
            if(temp==(_back+1)%_size){
                break;
@@ -688,107 +581,6 @@ class Robot{
             }
             return Q;
         }
-        /*queue <Node> *findShortestPath(Node *_from,Node *_to){//by BFS 
-            //construct a matrix "similar" to field
-           Tile **grid=new Tile* [field->_H()];
-           for(int i=0;i<field->_H();i++){
-               grid[i]=new Tile[field->_W()];
-           }
-           for(int i=0;i<field->_H();i++){
-               for(int j=0;j<field->_W();j++){
-                   grid[i][j].setup(i,j,field->_data(i,j));
-               }
-           }
-            Tile *from=&grid[_from->_h()][_from->_w()];
-            from->setPrevious(from);
-            //counting path beside destination
-            int count=0,paths=((grid[_to->_h()][_to->_w()-1]._data()==1)?0:1)+
-                              ((grid[_to->_h()-1][_to->_w()]._data()==1)?0:1)+
-                              ((grid[_to->_h()][_to->_w()+1]._data()==1)?0:1)+
-                              ((grid[_to->_h()+1][_to->_w()]._data()==1)?0:1);
-
-           //start finding
-           queue <Tile> q(houseSize);
-           q.push(from);
-           while(q.size()!=0){
-               Tile *temp=q.front(),*temp2;
-                q.pop();
-                //visit left
-                temp2=&grid[temp->_h()][temp->_w()-1];
-                if(temp2->_data()!=1&&notInWall(temp->_h(),temp->_w()-1)){//can walk
-                    if(temp2->_previous()==NULL){//never visited
-                        temp2->setDistance(temp->_distance()+1);
-                        temp2->setData(temp->_data()+(temp2->_cleaned()?-1:0));
-                        temp2->setPrevious(temp);
-                        q.push(temp2);
-                    }else{//ever walk
-                        temp2->updateData(temp);
-                    }
-                    if(temp2->_h()==_to->_h()&&temp2->_w()==_to->_w()){
-                        count++;
-                    }
-                }
-                //visit up
-                temp2=&grid[temp->_h()-1][temp->_w()];
-                if(temp2->_data()!=1&&notInWall(temp->_h()-1,temp->_w())){//can walk
-                    if(temp2->_previous()==NULL){//never visited
-                        temp2->setDistance(temp->_distance()+1);
-                        temp2->setData(temp->_data()+(temp2->_cleaned()?-1:0));
-                        temp2->setPrevious(temp);
-                        q.push(temp2);
-                    }else{//ever walk
-                        temp2->updateData(temp);
-                    }
-                    if(temp2->_h()==_to->_h()&&temp2->_w()==_to->_w()){
-                        count++;
-                    }
-                }
-                //visit right
-                temp2=&grid[temp->_h()][temp->_w()+1];
-                if(temp2->_data()!=1&&notInWall(temp->_h(),temp->_w()+1)){//can walk
-                    if(temp2->_previous()==NULL){//never visited
-                        temp2->setDistance(temp->_distance()+1);
-                        temp2->setData(temp->_data()+(temp2->_cleaned()?-1:0));
-                        temp2->setPrevious(temp);
-                        q.push(temp2);
-                    }else{//ever walk
-                        temp2->updateData(temp);
-                    }
-                    if(temp2->_h()==_to->_h()&&temp2->_w()==_to->_w()){
-                        count++;
-                    }
-                }
-                //visit down
-                temp2=&grid[temp->_h()+1][temp->_w()];
-                if(temp2->_data()!=1&&notInWall(temp->_h()+1,temp->_w())){//can walk
-                    if(temp2->_previous()==NULL){//never visited
-                        temp2->setDistance(temp->_distance()+1);
-                        temp2->setData(temp->_data()+(temp2->_cleaned()?-1:0));
-                        temp2->setPrevious(temp);
-                        q.push(temp2);
-                    }else{//ever walk
-                        temp2->updateData(temp);
-                    }
-                    if(temp2->_h()==_to->_h()&&temp2->_w()==_to->_w()){
-                        count++;
-                    }
-                }
-                //find destination enough times
-                if(count==paths){
-                    break;
-                }
-            }
-            delete(&q);
-            queue <Node> *q1=new queue<Node>(houseSize);
-            //output path
-            Tile *temp=&grid[_to->_h()][_to->_w()];
-            while(temp!=from){
-                q1->push(new Node(temp));
-                temp=temp->_previous();
-            }
-            delete(grid);
-            return q1;
-        }*/
         bool moveTo(Node *_to){
             if(h==_to->_h()&&w==_to->_w()){//destination=start
                 return true;
@@ -805,12 +597,6 @@ class Robot{
             delete(tempQ);
             return true;
         }
-        /*int DistanceTo(Node *node){
-            queue <Node> *temp=findShortestPath(new Node(h,w),node);
-            int dis=temp->size();
-            temp->destroy();
-            return dis;
-        }*/
         bool batteryNotEnough(){//if there are enought battery back to charger
             int temp=field->_data(h,w);
             if(temp<0){
@@ -1019,8 +805,10 @@ int main()
         bot->moveTo(charger);
     }
 
-    cout << endl ;
-    cout << q.size()-1 << endl ;
-    q.printAll();
+    cout << endl ;    
+    ofstream of("final.path");
+    of << q.size()-1 << endl;
+    q.printAll(of);
+    of.close();
     return 0;
 }
